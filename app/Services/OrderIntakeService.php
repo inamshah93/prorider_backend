@@ -9,6 +9,7 @@ use App\Enums\PaymentStatus;
 use App\Models\Merchant;
 use App\Models\Order;
 use App\Models\User;
+use App\Support\PhoneNormalizer;
 use Illuminate\Support\Str;
 
 class OrderIntakeService
@@ -26,16 +27,21 @@ class OrderIntakeService
         $mergedCatalog = $this->mergeCatalogItems($catalog, $items);
         $merchant->update(['manual_saved_items' => $mergedCatalog]);
 
+        $customerPhone = PhoneNormalizer::normalize($data['customer_phone']) ?? $data['customer_phone'];
+        $customerUserId = User::role('Customer')->where('phone', $customerPhone)->value('id');
+
         $order = Order::create([
             'order_reference_number' => $this->generateReference(),
             'merchant_id' => $merchant->id,
+            'customer_user_id' => $customerUserId,
             'customer_name' => $data['customer_name'],
-            'customer_phone' => $data['customer_phone'],
+            'customer_phone' => $customerPhone,
             'delivery_address' => $data['delivery_address'],
             'target_city_id' => $city->id,
             'parcel_weight' => $data['parcel_weight'] ?? 0,
             'item_details' => $items,
             'cod_amount' => $data['cod_amount'] ?? 0,
+            'delivery_charge' => $merchant->effectiveDeliveryCharge(),
             'payment_method' => $data['payment_method'] ?? PaymentMethod::Cod->value,
             'payment_status' => PaymentStatus::Pending,
             'order_status' => OrderStatus::Created,

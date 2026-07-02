@@ -13,5 +13,11 @@ class DatabaseSeeder extends Seeder
             CitiesSeeder::class,
             DemoUsersSeeder::class,
         ]);
+
+        if (app()->environment('local')) {
+            $this->call([
+                DemoOpsDataSeeder::class,
+            ]);
+        }
     }
 }

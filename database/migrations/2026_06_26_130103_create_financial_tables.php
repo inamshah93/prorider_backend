@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('order_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('merchant_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('rider_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->enum('entry_type', ['cod_collected', 'rider_commission', 'platform_fee', 'merchant_payable', 'manual_override']);
+            $table->enum('entry_type', ['cod_collected', 'rider_commission', 'platform_fee', 'merchant_payable', 'manual_override', 'rider_settlement']);
             $table->decimal('amount', 12, 2);
             $table->decimal('balance_after', 12, 2)->nullable();
             $table->string('reference')->nullable();

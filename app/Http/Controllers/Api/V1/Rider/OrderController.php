@@ -15,21 +15,25 @@ class OrderController extends Controller
 {
     public function __construct(private OrderStateMachine $stateMachine) {}
 
-    public function pickedUp(Request $request, Order $order): JsonResponse
+    public function batchPickedUp(Request $request): JsonResponse
     {
-        if (! $order->rider_id) {
-            $order->update(['rider_id' => $request->user()->id]);
-            if ($order->order_status === OrderStatus::ReadyToShip) {
-                $this->stateMachine->transition($order, OrderStatus::Dispatched, $request->user());
-                $order->refresh();
-            }
+        $data = $request->validate([
+            'order_ids' => 'required|array|min:1|max:10',
+            'order_ids.*' => 'integer|exists:orders,id',
+        ]);
+
+        $results = [];
+        foreach ($data['order_ids'] as $orderId) {
+            $order = Order::findOrFail($orderId);
+            $results[] = $this->performPickup($request, $order);
         }
 
-        abort_unless($order->rider_id === $request->user()->id, 403);
+        return response()->json(['data' => $results]);
+    }
 
-        $this->stateMachine->transition($order, OrderStatus::PickedUp, $request->user());
-
-        return response()->json(['data' => new OrderResource($order->fresh())]);
+    public function pickedUp(Request $request, Order $order): JsonResponse
+    {
+        return response()->json(['data' => $this->performPickup($request, $order)]);
     }
 
     public function delivered(Request $request, Order $order): JsonResponse
@@ -49,6 +53,7 @@ class OrderController extends Controller
         $payload = [
             'order_reference' => $order->order_reference_number,
             'cod_amount' => $order->cod_amount,
+            'delivery_charge' => $order->delivery_charge,
             'payment_method' => $order->payment_method?->value ?? $order->payment_method,
             'terms' => 'Collect cash from customer upon delivery.',
         ];
@@ -63,5 +68,22 @@ class OrderController extends Controller
         }
 
         return response()->json(['data' => $payload]);
+    }
+
+    private function performPickup(Request $request, Order $order): OrderResource
+    {
+        if (! $order->rider_id) {
+            $order->update(['rider_id' => $request->user()->id]);
+            if ($order->order_status === OrderStatus::ReadyToShip) {
+                $this->stateMachine->transition($order, OrderStatus::Dispatched, $request->user());
+                $order->refresh();
+            }
+        }
+
+        abort_unless($order->rider_id === $request->user()->id, 403);
+
+        $this->stateMachine->transition($order, OrderStatus::PickedUp, $request->user());
+
+        return new OrderResource($order->fresh(['merchant', 'targetCity']));
     }
 }

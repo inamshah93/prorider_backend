@@ -27,6 +27,7 @@ class StaffController extends Controller
         $data = $request->validate([
             'name' => 'required|string',
             'email' => 'required|email|unique:users,email',
+            'phone' => 'nullable|string|max:20',
             'password' => 'required|min:8',
             'role' => 'required|string|exists:roles,name',
             'permissions' => 'array',
@@ -36,6 +37,7 @@ class StaffController extends Controller
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
+            'phone' => $data['phone'] ?? null,
             'password' => Hash::make($data['password']),
             'status' => 'active',
         ]);

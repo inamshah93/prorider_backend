@@ -44,7 +44,13 @@ class OrderController extends Controller
     public function show(Order $order): JsonResponse
     {
         return response()->json([
-            'data' => new OrderResource($order->load(['merchant', 'rider', 'targetCity', 'events.actor'])),
+            'data' => new OrderResource($order->load([
+                'merchant.user',
+                'rider',
+                'targetCity',
+                'events.actor',
+                'customerUser',
+            ])),
         ]);
     }
 

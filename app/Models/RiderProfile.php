@@ -13,6 +13,7 @@ class RiderProfile extends Model
         'current_lat',
         'current_lng',
         'cash_in_hand',
+        'commission_rate',
         'documents_verified',
         'assigned_city_id',
     ];
@@ -23,6 +24,7 @@ class RiderProfile extends Model
             'is_online' => 'boolean',
             'documents_verified' => 'boolean',
             'cash_in_hand' => 'decimal:2',
+            'commission_rate' => 'decimal:4',
             'current_lat' => 'decimal:7',
             'current_lng' => 'decimal:7',
         ];
@@ -31,6 +33,15 @@ class RiderProfile extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function effectiveCommissionRate(): float
+    {
+        if ($this->commission_rate !== null) {
+            return (float) $this->commission_rate;
+        }
+
+        return PlatformSetting::defaultRiderCommissionRate();
     }
 
     public function assignedCity(): BelongsTo

@@ -8,6 +8,7 @@ use App\Enums\PaymentMethod;
 use App\Models\DayEndSnapshot;
 use App\Models\FinancialLedger;
 use App\Models\Order;
+use App\Models\PlatformSetting;
 use App\Models\RiderProfile;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -64,10 +65,35 @@ class DayEndAccountingService
 
     public function recordDeliveryLedger(Order $order): void
     {
+        if (FinancialLedger::query()
+            ->where('order_id', $order->id)
+            ->where('entry_type', LedgerEntryType::RiderCommission)
+            ->exists()) {
+            return;
+        }
+
         DB::transaction(function () use ($order) {
+            $order->refresh();
             $codAmount = (float) $order->cod_amount;
-            $riderRate = (float) config('prorider.rider_commission_rate', 0.05);
+            $deliveryCharge = (float) $order->delivery_charge;
             $platformRate = (float) config('prorider.platform_commission_rate', 0.10);
+
+            $commission = 0.0;
+            if ($order->rider_id) {
+                $profile = RiderProfile::where('user_id', $order->rider_id)->first();
+                $riderRate = $profile?->effectiveCommissionRate() ?? PlatformSetting::defaultRiderCommissionRate();
+                $commission = round($deliveryCharge * $riderRate, 2);
+
+                FinancialLedger::create([
+                    'order_id' => $order->id,
+                    'rider_id' => $order->rider_id,
+                    'entry_type' => LedgerEntryType::RiderCommission,
+                    'amount' => $commission,
+                    'reference' => $order->order_reference_number,
+                ]);
+
+                $order->update(['rider_commission_amount' => $commission]);
+            }
 
             if ($order->payment_method === PaymentMethod::Cod && $codAmount > 0) {
                 FinancialLedger::create([
@@ -80,21 +106,12 @@ class DayEndAccountingService
                 ]);
 
                 if ($order->rider_id) {
-                    $commission = round($codAmount * $riderRate, 2);
-                    FinancialLedger::create([
-                        'order_id' => $order->id,
-                        'rider_id' => $order->rider_id,
-                        'entry_type' => LedgerEntryType::RiderCommission,
-                        'amount' => $commission,
-                        'reference' => $order->order_reference_number,
-                    ]);
-
                     RiderProfile::where('user_id', $order->rider_id)
                         ->increment('cash_in_hand', $codAmount - $commission);
                 }
 
                 $platformFee = round($codAmount * $platformRate, 2);
-                $merchantPayable = $codAmount - $platformFee - ($commission ?? 0);
+                $merchantPayable = $codAmount - $platformFee - $commission;
 
                 FinancialLedger::create([
                     'order_id' => $order->id,

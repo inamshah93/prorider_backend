@@ -14,7 +14,7 @@ class TrackingController extends Controller
     {
         $request->validate(['phone' => 'nullable|string']);
 
-        $order = Order::with(['rider.riderProfile', 'targetCity', 'events'])
+        $order = Order::with(['rider.riderProfile', 'targetCity', 'events', 'merchant'])
             ->where('order_reference_number', $orderReference)
             ->when($request->phone, fn ($q) => $q->where('customer_phone', $request->phone))
             ->firstOrFail();
@@ -36,6 +36,9 @@ class TrackingController extends Controller
             'customer_name' => $order->customer_name,
             'delivery_address' => $order->delivery_address,
             'target_city' => $order->targetCity?->name,
+            'merchant' => $order->merchant ? [
+                'store_name' => $order->merchant->store_name,
+            ] : null,
             'milestones' => $milestones,
             'rider_location' => $riderLocation,
             'updated_at' => $order->updated_at,

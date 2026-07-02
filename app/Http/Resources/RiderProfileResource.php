@@ -15,12 +15,15 @@ class RiderProfileResource extends JsonResource
             'current_lat' => $this->current_lat,
             'current_lng' => $this->current_lng,
             'cash_in_hand' => $this->cash_in_hand,
+            'commission_rate' => $this->commission_rate,
+            'effective_commission_rate' => $this->effectiveCommissionRate(),
             'documents_verified' => $this->documents_verified,
             'assigned_city_id' => $this->assigned_city_id,
             'assigned_city' => $this->whenLoaded('assignedCity', fn () => $this->assignedCity?->name),
             'user' => $this->whenLoaded('user', fn () => [
                 'id' => $this->user->id,
                 'name' => $this->user->name,
+                'email' => $this->user->email,
                 'phone' => $this->user->phone,
             ]),
         ];

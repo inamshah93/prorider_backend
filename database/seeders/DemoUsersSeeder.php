@@ -82,5 +82,21 @@ class DemoUsersSeeder extends Seeder
             ],
         );
         $customer->assignRole('Customer');
+
+        $employee = User::firstOrCreate(
+            ['phone' => '03005551234'],
+            [
+                'name' => 'Ali Employee',
+                'email' => 'employee@velo.pk',
+                'password' => Hash::make('password'),
+                'status' => UserStatus::Active,
+            ],
+        );
+        $employee->syncRoles(['OperationsManager', 'Merchant', 'Customer']);
+
+        Merchant::firstOrCreate(
+            ['user_id' => $employee->id],
+            ['store_name' => 'Ali Employee Store'],
+        );
     }
 }

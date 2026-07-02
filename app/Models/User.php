@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\UserStatus;
+use App\Support\PhoneNormalizer;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -42,5 +43,15 @@ class User extends Authenticatable
     public function isActive(): bool
     {
         return $this->status === UserStatus::Active;
+    }
+
+    public static function findByPhone(?string $phone): ?self
+    {
+        $variants = PhoneNormalizer::variants($phone);
+        if ($variants === []) {
+            return null;
+        }
+
+        return static::query()->whereIn('phone', $variants)->first();
     }
 }

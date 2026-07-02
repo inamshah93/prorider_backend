@@ -12,6 +12,8 @@ class MerchantResource extends JsonResource
         return [
             'id' => $this->id,
             'store_name' => $this->store_name,
+            'delivery_charge' => $this->delivery_charge,
+            'effective_delivery_charge' => $this->effectiveDeliveryCharge(),
             'shopify_shop_url' => $this->shopify_shop_url,
             'manual_saved_items' => $this->manual_saved_items ?? [],
             'orders_count' => $this->when(isset($this->orders_count), $this->orders_count),

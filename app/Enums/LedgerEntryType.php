@@ -9,4 +9,5 @@ enum LedgerEntryType: string
     case PlatformFee = 'platform_fee';
     case MerchantPayable = 'merchant_payable';
     case ManualOverride = 'manual_override';
+    case RiderSettlement = 'rider_settlement';
 }

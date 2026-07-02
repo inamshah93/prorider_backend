@@ -16,6 +16,7 @@ class Order extends Model
         'order_reference_number',
         'merchant_id',
         'rider_id',
+        'customer_user_id',
         'customer_name',
         'customer_phone',
         'delivery_address',
@@ -23,6 +24,8 @@ class Order extends Model
         'parcel_weight',
         'item_details',
         'cod_amount',
+        'delivery_charge',
+        'rider_commission_amount',
         'payment_method',
         'payment_status',
         'order_status',
@@ -39,6 +42,8 @@ class Order extends Model
             'item_details' => 'array',
             'parcel_weight' => 'decimal:2',
             'cod_amount' => 'decimal:2',
+            'delivery_charge' => 'decimal:2',
+            'rider_commission_amount' => 'decimal:2',
             'payment_method' => PaymentMethod::class,
             'payment_status' => PaymentStatus::class,
             'order_status' => OrderStatus::class,
@@ -54,6 +59,11 @@ class Order extends Model
     public function rider(): BelongsTo
     {
         return $this->belongsTo(User::class, 'rider_id');
+    }
+
+    public function customerUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'customer_user_id');
     }
 
     public function targetCity(): BelongsTo

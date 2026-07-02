@@ -39,6 +39,7 @@ class ShopifyWebhookService
             'parcel_weight' => $payload['total_weight'] ?? 0,
             'item_details' => $lineItems,
             'cod_amount' => (float) ($payload['total_price'] ?? 0),
+            'delivery_charge' => $merchant->effectiveDeliveryCharge(),
             'payment_method' => PaymentMethod::Cod,
             'payment_status' => PaymentStatus::Pending,
             'order_status' => OrderStatus::Created,
