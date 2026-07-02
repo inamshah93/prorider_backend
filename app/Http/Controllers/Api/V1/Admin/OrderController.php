@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Services\AuditLogService;
+use App\Services\OrderNotificationService;
 use App\Services\OrderStateMachine;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,6 +17,7 @@ class OrderController extends Controller
     public function __construct(
         private OrderStateMachine $stateMachine,
         private AuditLogService $auditLog,
+        private OrderNotificationService $notifications,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -79,6 +81,8 @@ class OrderController extends Controller
             context: ['rider_id' => $data['rider_id']],
             request: $request,
         );
+
+        $this->notifications->notifyRiderAssigned($fresh);
 
         return response()->json(['data' => new OrderResource($fresh)]);
     }

@@ -7,13 +7,17 @@ use App\Events\OrderDelivered;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
+use App\Services\OrderNotificationService;
 use App\Services\OrderStateMachine;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller
 {
-    public function __construct(private OrderStateMachine $stateMachine) {}
+    public function __construct(
+        private OrderStateMachine $stateMachine,
+        private OrderNotificationService $notifications,
+    ) {}
 
     public function batchPickedUp(Request $request): JsonResponse
     {
@@ -41,9 +45,21 @@ class OrderController extends Controller
         abort_unless($order->rider_id === $request->user()->id, 403);
 
         $this->stateMachine->transition($order, OrderStatus::Delivered, $request->user());
-        event(new OrderDelivered($order->fresh()));
+        $fresh = $order->fresh(['merchant', 'customerUser']);
+        event(new OrderDelivered($fresh));
 
-        return response()->json(['data' => new OrderResource($order->fresh())]);
+        $this->notifications->notifyCustomerStatus(
+            $fresh,
+            'Order delivered',
+            "Your order {$fresh->order_reference_number} has been delivered.",
+        );
+        $this->notifications->notifyMerchant(
+            $fresh,
+            'Order delivered',
+            "Order {$fresh->order_reference_number} was delivered.",
+        );
+
+        return response()->json(['data' => new OrderResource($fresh)]);
     }
 
     public function checkout(Request $request, Order $order): JsonResponse
@@ -83,7 +99,14 @@ class OrderController extends Controller
         abort_unless($order->rider_id === $request->user()->id, 403);
 
         $this->stateMachine->transition($order, OrderStatus::PickedUp, $request->user());
+        $fresh = $order->fresh(['merchant', 'targetCity', 'customerUser']);
 
-        return new OrderResource($order->fresh(['merchant', 'targetCity']));
+        $this->notifications->notifyCustomerStatus(
+            $fresh,
+            'Out for delivery',
+            "Your order {$fresh->order_reference_number} is on the way.",
+        );
+
+        return new OrderResource($fresh);
     }
 }

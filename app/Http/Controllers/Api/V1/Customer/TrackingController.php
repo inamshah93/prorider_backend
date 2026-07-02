@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Customer;
 use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Services\EtaCalculator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -22,12 +23,21 @@ class TrackingController extends Controller
         $milestones = $this->buildMilestones($order);
 
         $riderLocation = null;
+        $etaMinutes = null;
         if ($order->rider?->riderProfile) {
+            $profile = $order->rider->riderProfile;
             $riderLocation = [
-                'lat' => $order->rider->riderProfile->current_lat,
-                'lng' => $order->rider->riderProfile->current_lng,
+                'lat' => $profile->current_lat,
+                'lng' => $profile->current_lng,
                 'rider_name' => $order->rider->name,
             ];
+
+            $etaMinutes = EtaCalculator::minutesBetween(
+                $profile->current_lat ? (float) $profile->current_lat : null,
+                $profile->current_lng ? (float) $profile->current_lng : null,
+                $order->pickup_lat ? (float) $order->pickup_lat : null,
+                $order->pickup_lng ? (float) $order->pickup_lng : null,
+            );
         }
 
         return response()->json([
@@ -41,6 +51,11 @@ class TrackingController extends Controller
             ] : null,
             'milestones' => $milestones,
             'rider_location' => $riderLocation,
+            'pickup_location' => ($order->pickup_lat && $order->pickup_lng) ? [
+                'lat' => $order->pickup_lat,
+                'lng' => $order->pickup_lng,
+            ] : null,
+            'eta_minutes' => $etaMinutes,
             'updated_at' => $order->updated_at,
         ]);
     }
