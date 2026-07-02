@@ -6,13 +6,17 @@ use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
+use App\Services\AuditLogService;
 use App\Services\OrderStateMachine;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller
 {
-    public function __construct(private OrderStateMachine $stateMachine) {}
+    public function __construct(
+        private OrderStateMachine $stateMachine,
+        private AuditLogService $auditLog,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -64,12 +68,33 @@ class OrderController extends Controller
             $this->stateMachine->transition($order, OrderStatus::Dispatched, $request->user());
         }
 
-        return response()->json(['data' => new OrderResource($order->fresh()->load(['rider', 'merchant']))]);
+        $fresh = $order->fresh()->load(['rider', 'merchant']);
+
+        $this->auditLog->record(
+            user: $request->user(),
+            action: 'order.assign_rider',
+            entity: 'order',
+            entityId: $order->id,
+            message: "Assigned rider #{$data['rider_id']} to {$fresh->order_reference_number}",
+            context: ['rider_id' => $data['rider_id']],
+            request: $request,
+        );
+
+        return response()->json(['data' => new OrderResource($fresh)]);
     }
 
     public function cancel(Request $request, Order $order): JsonResponse
     {
         $this->stateMachine->transition($order, OrderStatus::Cancelled, $request->user());
+
+        $this->auditLog->record(
+            user: $request->user(),
+            action: 'order.cancel',
+            entity: 'order',
+            entityId: $order->id,
+            message: "Cancelled order {$order->order_reference_number}",
+            request: $request,
+        );
 
         return response()->json(['data' => new OrderResource($order->fresh())]);
     }

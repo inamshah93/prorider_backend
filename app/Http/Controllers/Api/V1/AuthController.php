@@ -74,4 +74,15 @@ class AuthController extends Controller
             ),
         ]);
     }
+
+    public function updateDeviceToken(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'device_token' => 'required|string',
+        ]);
+
+        $request->user()->update(['device_token' => $data['device_token']]);
+
+        return response()->json(['message' => 'Device token updated.']);
+    }
 }

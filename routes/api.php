@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\V1\Admin\StaffController as AdminStaffController;
 use App\Http\Controllers\Api\V1\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Api\V1\Admin\UserRoleController as AdminUserRoleController;
 use App\Http\Controllers\Api\V1\Admin\ReportsController as AdminReportsController;
+use App\Http\Controllers\Api\V1\Admin\ActivityLogController as AdminActivityLogController;
 use App\Http\Controllers\Api\V1\Admin\CustomerController as AdminCustomerController;
 use App\Http\Controllers\Api\V1\Customer\OrderController as CustomerOrderController;
 use App\Http\Controllers\Api\V1\Customer\ProfileController as CustomerProfileController;
@@ -42,6 +43,7 @@ Route::prefix('v1')->group(function () {
     Route::middleware(['auth:sanctum', 'sanctum.guard'])->group(function () {
         Route::post('auth/logout', [AuthController::class, 'logout']);
         Route::get('auth/me', [AuthController::class, 'me']);
+        Route::put('auth/device-token', [AuthController::class, 'updateDeviceToken']);
 
         Route::prefix('admin')->group(function () {
             Route::get('dashboard', [AdminDashboardController::class, 'index']);
@@ -81,6 +83,8 @@ Route::prefix('v1')->group(function () {
                 Route::get('riders/{rider}/orders', [AdminRiderController::class, 'orders']);
                 Route::get('riders/{rider}/orders/stats', [AdminRiderController::class, 'orderStats']);
             });
+
+            Route::get('activity-logs', [AdminActivityLogController::class, 'index']);
 
             Route::get('orders', [AdminOrderController::class, 'index']);
             Route::get('orders/{order}', [AdminOrderController::class, 'show']);

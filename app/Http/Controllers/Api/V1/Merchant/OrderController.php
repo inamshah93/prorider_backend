@@ -21,12 +21,31 @@ class OrderController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $orders = Order::where('merchant_id', $request->user()->merchant->id)
+        $query = Order::where('merchant_id', $request->user()->merchant->id)
             ->with('targetCity')
-            ->latest()
-            ->paginate(20);
+            ->latest();
 
-        return response()->json(['data' => OrderResource::collection($orders)]);
+        if ($status = $request->get('status')) {
+            $query->where('order_status', $status);
+        }
+
+        if ($search = $request->get('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('order_reference_number', 'like', "%{$search}%")
+                    ->orWhere('customer_name', 'like', "%{$search}%");
+            });
+        }
+
+        $orders = $query->paginate(20);
+
+        return response()->json([
+            'data' => OrderResource::collection($orders),
+            'meta' => [
+                'page' => $orders->currentPage(),
+                'per_page' => $orders->perPage(),
+                'total' => $orders->total(),
+            ],
+        ]);
     }
 
     public function store(Request $request): JsonResponse

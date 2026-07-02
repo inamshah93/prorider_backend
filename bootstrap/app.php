@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureRole;
+use App\Http\Middleware\LogAdminAudit;
 use App\Http\Middleware\UseSanctumGuard;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -25,8 +26,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'sanctum.guard' => UseSanctumGuard::class,
             'ensure.role' => EnsureRole::class,
+            'log.admin.audit' => LogAdminAudit::class,
         ]);
 
+        $middleware->appendToGroup('api', LogAdminAudit::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
