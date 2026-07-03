@@ -14,6 +14,8 @@ class CityResource extends JsonResource
             'name' => $this->name,
             'province' => $this->province,
             'is_active' => $this->is_active,
+            'delivery_surcharge' => $this->delivery_surcharge,
+            'weight_rate_per_kg' => $this->weight_rate_per_kg,
             'aliases' => $this->whenLoaded('aliases', fn () => $this->aliases->pluck('alias_name')),
             'riders_count' => $this->when(isset($this->riders_count), $this->riders_count),
         ];

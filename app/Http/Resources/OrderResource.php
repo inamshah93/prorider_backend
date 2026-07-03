@@ -35,6 +35,11 @@ class OrderResource extends JsonResource
             'order_status' => $this->order_status?->value ?? $this->order_status,
             'merchant_prep_status' => $this->merchant_prep_status?->value ?? $this->merchant_prep_status,
             'awb_number' => $this->awb_number,
+            'assignment_status' => $this->assignment_status,
+            'pod_photo_path' => $this->pod_photo_path ? url('storage/'.$this->pod_photo_path) : null,
+            'signature_path' => $this->signature_path ? url('storage/'.$this->signature_path) : null,
+            'failure_reason' => $this->failure_reason,
+            'failed_at' => $this->failed_at,
             'merchant' => $this->whenLoaded('merchant', fn () => new MerchantResource($this->merchant)),
             'rider' => $this->whenLoaded('rider', fn () => $this->rider ? [
                 'id' => $this->rider->id,

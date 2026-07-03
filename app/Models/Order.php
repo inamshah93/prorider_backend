@@ -34,6 +34,11 @@ class Order extends Model
         'shopify_order_id',
         'pickup_lat',
         'pickup_lng',
+        'assignment_status',
+        'pod_photo_path',
+        'signature_path',
+        'failure_reason',
+        'failed_at',
     ];
 
     protected function casts(): array
@@ -48,6 +53,7 @@ class Order extends Model
             'payment_status' => PaymentStatus::class,
             'order_status' => OrderStatus::class,
             'merchant_prep_status' => MerchantPrepStatus::class,
+            'failed_at' => 'datetime',
         ];
     }
 

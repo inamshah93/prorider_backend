@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\OrderResource;
 use App\Http\Resources\RiderProfileResource;
 use App\Models\Order;
+use App\Models\RiderDocument;
 use App\Models\RiderProfile;
 use App\Models\RiderSettlement;
 use App\Models\User;
@@ -74,6 +75,43 @@ class RiderController extends Controller
         $rider->update(['documents_verified' => true]);
 
         return response()->json(['data' => new RiderProfileResource($rider->load('user', 'assignedCity'))]);
+    }
+
+    public function map(Request $request): JsonResponse
+    {
+        $riders = RiderProfile::with(['user', 'assignedCity'])
+            ->where('is_online', true)
+            ->whereNotNull('current_lat')
+            ->whereNotNull('current_lng')
+            ->get()
+            ->map(fn (RiderProfile $r) => [
+                'id' => $r->id,
+                'user_id' => $r->user_id,
+                'name' => $r->user?->name,
+                'phone' => $r->user?->phone,
+                'city' => $r->assignedCity?->name,
+                'lat' => (float) $r->current_lat,
+                'lng' => (float) $r->current_lng,
+                'cash_in_hand' => (float) ($r->cash_in_hand ?? 0),
+            ]);
+
+        return response()->json(['data' => $riders]);
+    }
+
+    public function documents(RiderProfile $rider): JsonResponse
+    {
+        $docs = RiderDocument::where('rider_profile_id', $rider->id)->latest()->get();
+
+        return response()->json([
+            'data' => $docs->map(fn (RiderDocument $d) => [
+                'id' => $d->id,
+                'document_type' => $d->document_type,
+                'file_url' => url('storage/'.$d->file_path),
+                'status' => $d->status,
+                'rejection_reason' => $d->rejection_reason,
+                'created_at' => $d->created_at,
+            ]),
+        ]);
     }
 
     public function assignCity(Request $request, RiderProfile $rider): JsonResponse
@@ -222,8 +260,8 @@ class RiderController extends Controller
 
         $total = (clone $base)->count();
         $delivered = (clone $base)->where('order_status', 'delivered')->count();
-        // "Return" is currently represented as "cancelled" in OrderStatus enum.
-        $returned = (clone $base)->where('order_status', 'cancelled')->count();
+        // Returned orders (RTO) and legacy cancelled proxy
+        $returned = (clone $base)->whereIn('order_status', ['returned', 'cancelled'])->count();
 
         $byStatus = (clone $base)
             ->selectRaw('order_status as status, COUNT(*) as cnt')

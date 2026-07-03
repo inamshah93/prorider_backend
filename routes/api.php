@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\V1\Admin\UserRoleController as AdminUserRoleControl
 use App\Http\Controllers\Api\V1\Admin\ReportsController as AdminReportsController;
 use App\Http\Controllers\Api\V1\Admin\ActivityLogController as AdminActivityLogController;
 use App\Http\Controllers\Api\V1\Admin\CustomerController as AdminCustomerController;
+use App\Http\Controllers\Api\V1\Customer\RatingController;
 use App\Http\Controllers\Api\V1\Customer\OrderController as CustomerOrderController;
 use App\Http\Controllers\Api\V1\Customer\ProfileController as CustomerProfileController;
 use App\Http\Controllers\Api\V1\Customer\TrackingController;
@@ -22,6 +23,7 @@ use App\Http\Controllers\Api\V1\Merchant\CatalogController;
 use App\Http\Controllers\Api\V1\Merchant\DashboardController as MerchantDashboardController;
 use App\Http\Controllers\Api\V1\Merchant\OrderController as MerchantOrderController;
 use App\Http\Controllers\Api\V1\Rider\AssignmentController;
+use App\Http\Controllers\Api\V1\Rider\DocumentController as RiderDocumentController;
 use App\Http\Controllers\Api\V1\Rider\OrderHistoryController;
 use App\Http\Controllers\Api\V1\Rider\OrderController as RiderOrderController;
 use App\Http\Controllers\Api\V1\Rider\ProfileController as RiderProfileController;
@@ -70,6 +72,7 @@ Route::prefix('v1')->group(function () {
             });
 
             Route::middleware('permission:manage-riders')->group(function () {
+                Route::get('riders/map', [AdminRiderController::class, 'map']);
                 Route::get('riders', [AdminRiderController::class, 'index']);
                 Route::post('riders', [AdminRiderController::class, 'store']);
                 Route::post('riders/{rider}/approve', [AdminRiderController::class, 'approveDocuments']);
@@ -77,6 +80,7 @@ Route::prefix('v1')->group(function () {
                 Route::put('riders/{rider}/user', [AdminRiderController::class, 'updateRiderUser']);
                 Route::put('riders/{rider}/city', [AdminRiderController::class, 'assignCity']);
                 Route::put('riders/{rider}/commission-rate', [AdminRiderController::class, 'updateCommissionRate']);
+                Route::get('riders/{rider}/documents', [AdminRiderController::class, 'documents']);
                 Route::get('riders/{rider}/wallet', [AdminRiderController::class, 'wallet']);
                 Route::get('riders/{rider}/settlements', [AdminRiderController::class, 'settlements']);
                 Route::post('riders/{rider}/settlements', [AdminRiderController::class, 'storeSettlement']);
@@ -111,6 +115,7 @@ Route::prefix('v1')->group(function () {
             Route::middleware('permission:view-analytics')->group(function () {
                 Route::get('reports/day-end', [AdminReportsController::class, 'dayEnd']);
                 Route::get('reports/riders', [AdminReportsController::class, 'riders']);
+                Route::get('reports/analytics', [AdminReportsController::class, 'analytics']);
             });
         });
 
@@ -120,7 +125,9 @@ Route::prefix('v1')->group(function () {
             Route::put('catalog', [CatalogController::class, 'update']);
             Route::get('orders', [MerchantOrderController::class, 'index']);
             Route::post('orders', [MerchantOrderController::class, 'store']);
+            Route::post('orders/bulk', [MerchantOrderController::class, 'bulkStore']);
             Route::get('orders/{order}', [MerchantOrderController::class, 'show']);
+            Route::get('orders/{order}/label', [MerchantOrderController::class, 'label']);
             Route::post('orders/{order}/generate-label', [MerchantOrderController::class, 'generateLabel']);
             Route::post('orders/{order}/mark-packed', [MerchantOrderController::class, 'markPacked']);
             Route::post('orders/{order}/ready-to-ship', [MerchantOrderController::class, 'readyToShip']);
@@ -128,6 +135,8 @@ Route::prefix('v1')->group(function () {
 
         Route::prefix('rider')->group(function () {
             Route::get('profile', [RiderProfileController::class, 'show']);
+            Route::get('documents', [RiderDocumentController::class, 'index']);
+            Route::post('documents', [RiderDocumentController::class, 'store']);
             Route::put('location', [RiderProfileController::class, 'updateLocation']);
             Route::put('online-status', [RiderProfileController::class, 'updateOnlineStatus']);
             Route::get('earnings', [RiderProfileController::class, 'earnings']);
@@ -135,7 +144,11 @@ Route::prefix('v1')->group(function () {
             Route::get('orders', [OrderHistoryController::class, 'index']);
             Route::get('assignments', [AssignmentController::class, 'index']);
             Route::post('orders/batch-picked-up', [RiderOrderController::class, 'batchPickedUp']);
+            Route::post('orders/{order}/accept', [RiderOrderController::class, 'accept']);
+            Route::post('orders/{order}/reject', [RiderOrderController::class, 'reject']);
             Route::post('orders/{order}/picked-up', [RiderOrderController::class, 'pickedUp']);
+            Route::post('orders/{order}/failed', [RiderOrderController::class, 'failed']);
+            Route::post('orders/{order}/returned', [RiderOrderController::class, 'markReturned']);
             Route::get('wallet', [RiderWalletController::class, 'show']);
             Route::get('settlements', [RiderWalletController::class, 'settlements']);
             Route::post('orders/{order}/delivered', [RiderOrderController::class, 'delivered']);
@@ -146,6 +159,7 @@ Route::prefix('v1')->group(function () {
             Route::get('profile', [CustomerProfileController::class, 'show']);
             Route::get('orders', [CustomerOrderController::class, 'index']);
             Route::get('orders/{order}', [CustomerOrderController::class, 'show']);
+            Route::post('orders/{order}/rate', [RatingController::class, 'store']);
         });
     });
 });

@@ -30,6 +30,7 @@ class TrackingController extends Controller
                 'lat' => $profile->current_lat,
                 'lng' => $profile->current_lng,
                 'rider_name' => $order->rider->name,
+                'rider_phone' => $order->order_status?->value === 'picked_up' ? $order->rider->phone : null,
             ];
 
             $etaMinutes = EtaCalculator::minutesBetween(
@@ -56,6 +57,7 @@ class TrackingController extends Controller
                 'lng' => $order->pickup_lng,
             ] : null,
             'eta_minutes' => $etaMinutes,
+            'can_rate' => ($order->order_status?->value ?? $order->order_status) === 'delivered',
             'updated_at' => $order->updated_at,
         ]);
     }
@@ -78,6 +80,8 @@ class TrackingController extends Controller
             'picked_up' => 2,
             'delivered' => 3,
             'cancelled' => -1,
+            'failed' => 2,
+            'returned' => -1,
         ];
 
         $level = $statusMap[$status] ?? 0;

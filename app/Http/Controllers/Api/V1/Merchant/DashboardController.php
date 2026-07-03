@@ -30,9 +30,20 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
+        $totalOrders = Order::where('merchant_id', $merchant->id)->count();
+        $totalDelivered = Order::where('merchant_id', $merchant->id)
+            ->where('order_status', OrderStatus::Delivered)
+            ->count();
+        $lifetimeCodDelivered = (float) Order::where('merchant_id', $merchant->id)
+            ->where('order_status', OrderStatus::Delivered)
+            ->sum('cod_amount');
+
         return response()->json([
             'delivered_today' => $deliveredToday,
             'account_payables' => $payables,
+            'total_orders' => $totalOrders,
+            'total_delivered' => $totalDelivered,
+            'lifetime_cod_delivered' => $lifetimeCodDelivered,
             'recent_orders' => OrderResource::collection($recentOrders),
         ]);
     }

@@ -16,8 +16,10 @@ class OrderStateMachine
     private array $transitions = [
         'created' => ['ready_to_ship', 'cancelled'],
         'ready_to_ship' => ['dispatched', 'cancelled'],
-        'dispatched' => ['picked_up'],
-        'picked_up' => ['delivered'],
+        'dispatched' => ['picked_up', 'cancelled'],
+        'picked_up' => ['delivered', 'failed'],
+        'failed' => ['returned', 'dispatched'],
+        'returned' => [],
     ];
 
     public function transition(Order $order, OrderStatus $to, ?User $actor = null, array $metadata = []): Order

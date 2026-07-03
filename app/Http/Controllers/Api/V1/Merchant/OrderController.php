@@ -113,4 +113,58 @@ class OrderController extends Controller
 
         return response()->json(['data' => new OrderResource($order->fresh())]);
     }
+
+    public function label(Request $request, Order $order): JsonResponse
+    {
+        abort_unless($order->merchant_id === $request->user()->merchant->id, 403);
+        abort_unless($order->awb_number, 422, 'Generate label first.');
+
+        $order->load(['targetCity', 'merchant']);
+
+        return response()->json([
+            'data' => [
+                'awb_number' => $order->awb_number,
+                'order_reference' => $order->order_reference_number,
+                'customer_name' => $order->customer_name,
+                'customer_phone' => $order->customer_phone,
+                'delivery_address' => $order->delivery_address,
+                'target_city' => $order->targetCity?->name,
+                'cod_amount' => $order->cod_amount,
+                'parcel_weight' => $order->parcel_weight,
+                'store_name' => $order->merchant?->store_name,
+                'label_text' => implode("\n", [
+                    "AWB: {$order->awb_number}",
+                    "Ref: {$order->order_reference_number}",
+                    "To: {$order->customer_name}",
+                    "Phone: {$order->customer_phone}",
+                    "Address: {$order->delivery_address}",
+                    "City: {$order->targetCity?->name}",
+                    "COD: ₨{$order->cod_amount}",
+                ]),
+            ],
+        ]);
+    }
+
+    public function bulkStore(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'orders' => 'required|array|min:1|max:50',
+            'orders.*.customer_name' => 'required|string',
+            'orders.*.customer_phone' => 'required|string',
+            'orders.*.delivery_address' => 'required|string',
+            'orders.*.city_name' => 'required|string',
+            'orders.*.cod_amount' => 'required|numeric|min:0',
+            'orders.*.parcel_weight' => 'nullable|numeric',
+            'orders.*.items' => 'required|array',
+        ]);
+
+        $merchant = $request->user()->merchant;
+        $created = [];
+
+        foreach ($data['orders'] as $row) {
+            $created[] = $this->intakeService->createManualOrder($merchant, $request->user(), $row);
+        }
+
+        return response()->json(['data' => OrderResource::collection(collect($created))], 201);
+    }
 }

@@ -12,10 +12,22 @@ class OrderController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $orders = ProfileController::customerOrdersQuery($request->user())
-            ->with(['merchant', 'targetCity'])
-            ->latest()
-            ->paginate(20);
+        $query = ProfileController::customerOrdersQuery($request->user())
+            ->with(['merchant', 'targetCity']);
+
+        if ($status = $request->get('status')) {
+            $query->where('order_status', $status);
+        }
+
+        if ($from = $request->get('from')) {
+            $query->whereDate('created_at', '>=', $from);
+        }
+
+        if ($to = $request->get('to')) {
+            $query->whereDate('created_at', '<=', $to);
+        }
+
+        $orders = $query->latest()->paginate(20);
 
         return response()->json([
             'data' => CustomerOrderResource::collection($orders),

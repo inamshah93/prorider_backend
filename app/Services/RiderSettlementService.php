@@ -69,6 +69,21 @@ class RiderSettlementService
             ->where('rider_id', $riderId)
             ->sum('amount');
 
+        $recentEntries = FinancialLedger::query()
+            ->where('rider_id', $riderId)
+            ->whereIn('entry_type', [LedgerEntryType::CodCollected, LedgerEntryType::RiderCommission, LedgerEntryType::RiderSettlement])
+            ->latest()
+            ->limit(15)
+            ->get()
+            ->map(fn (FinancialLedger $e) => [
+                'id' => $e->id,
+                'entry_type' => $e->entry_type?->value ?? $e->entry_type,
+                'amount' => $e->amount,
+                'reference' => $e->reference,
+                'notes' => $e->notes,
+                'created_at' => $e->created_at,
+            ]);
+
         return [
             'cash_in_hand' => (float) ($profile->cash_in_hand ?? 0),
             'remaining_to_pay' => (float) ($profile->cash_in_hand ?? 0),
@@ -77,6 +92,7 @@ class RiderSettlementService
             'total_settled' => $totalSettled,
             'commission_rate' => $profile?->effectiveCommissionRate(),
             'is_online' => (bool) ($profile->is_online ?? false),
+            'recent_entries' => $recentEntries,
         ];
     }
 }

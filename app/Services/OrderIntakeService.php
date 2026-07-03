@@ -16,6 +16,7 @@ class OrderIntakeService
 {
     public function __construct(
         private CityResolverService $cityResolver,
+        private DeliveryPricingService $pricing,
     ) {}
 
     public function createManualOrder(Merchant $merchant, User $actor, array $data): Order
@@ -29,6 +30,7 @@ class OrderIntakeService
 
         $customerPhone = PhoneNormalizer::normalize($data['customer_phone']) ?? $data['customer_phone'];
         $customerUserId = User::role('Customer')->where('phone', $customerPhone)->value('id');
+        $parcelWeight = (float) ($data['parcel_weight'] ?? 0);
 
         $order = Order::create([
             'order_reference_number' => $this->generateReference(),
@@ -38,10 +40,10 @@ class OrderIntakeService
             'customer_phone' => $customerPhone,
             'delivery_address' => $data['delivery_address'],
             'target_city_id' => $city->id,
-            'parcel_weight' => $data['parcel_weight'] ?? 0,
+            'parcel_weight' => $parcelWeight,
             'item_details' => $items,
             'cod_amount' => $data['cod_amount'] ?? 0,
-            'delivery_charge' => $merchant->effectiveDeliveryCharge(),
+            'delivery_charge' => $this->pricing->calculate($merchant, $city, $parcelWeight),
             'payment_method' => $data['payment_method'] ?? PaymentMethod::Cod->value,
             'payment_status' => PaymentStatus::Pending,
             'order_status' => OrderStatus::Created,

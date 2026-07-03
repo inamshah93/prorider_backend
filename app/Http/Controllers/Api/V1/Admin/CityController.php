@@ -40,6 +40,8 @@ class CityController extends Controller
             'name' => 'sometimes|string|unique:cities,name,'.$city->id,
             'province' => 'nullable|string',
             'is_active' => 'boolean',
+            'delivery_surcharge' => 'nullable|numeric|min:0',
+            'weight_rate_per_kg' => 'nullable|numeric|min:0',
         ]);
 
         $city->update($data);

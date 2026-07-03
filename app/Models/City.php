@@ -7,11 +7,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class City extends Model
 {
-    protected $fillable = ['name', 'province', 'is_active'];
+    protected $fillable = ['name', 'province', 'is_active', 'delivery_surcharge', 'weight_rate_per_kg'];
 
     protected function casts(): array
     {
-        return ['is_active' => 'boolean'];
+        return ['is_active' => 'boolean', 'delivery_surcharge' => 'decimal:2', 'weight_rate_per_kg' => 'decimal:2'];
     }
 
     public function aliases(): HasMany

@@ -10,4 +10,6 @@ enum OrderStatus: string
     case PickedUp = 'picked_up';
     case Delivered = 'delivered';
     case Cancelled = 'cancelled';
+    case Failed = 'failed';
+    case Returned = 'returned';
 }

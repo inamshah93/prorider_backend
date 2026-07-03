@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Admin;
 
+use App\Enums\AssignmentStatus;
 use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\OrderResource;
@@ -64,7 +65,10 @@ class OrderController extends Controller
     {
         $data = $request->validate(['rider_id' => 'required|exists:users,id']);
 
-        $order->update(['rider_id' => $data['rider_id']]);
+        $order->update([
+            'rider_id' => $data['rider_id'],
+            'assignment_status' => AssignmentStatus::Pending->value,
+        ]);
 
         if ($order->order_status === OrderStatus::ReadyToShip) {
             $this->stateMachine->transition($order, OrderStatus::Dispatched, $request->user());

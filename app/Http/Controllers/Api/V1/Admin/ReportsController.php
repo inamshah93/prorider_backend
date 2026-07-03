@@ -48,7 +48,8 @@ class ReportsController extends Controller
                 ->sum('amount');
 
             return [
-                'id' => $riderId,
+                'id' => $r->riderProfile?->id ?? $riderId,
+                'user_id' => $riderId,
                 'name' => $r->name,
                 'phone' => $r->phone,
                 'is_online' => (bool) ($r->riderProfile?->is_online ?? false),
@@ -60,6 +61,38 @@ class ReportsController extends Controller
         })->values();
 
         return response()->json(['data' => $data]);
+    }
+
+    public function analytics(): JsonResponse
+    {
+        $byStatus = \App\Models\Order::query()
+            ->selectRaw('order_status as status, COUNT(*) as count')
+            ->groupBy('order_status')
+            ->pluck('count', 'status');
+
+        $deliveredToday = \App\Models\Order::where('order_status', 'delivered')
+            ->whereDate('updated_at', today())
+            ->count();
+
+        $failedWeek = \App\Models\Order::where('order_status', 'failed')
+            ->where('updated_at', '>=', now()->subDays(7))
+            ->count();
+
+        $returnedWeek = \App\Models\Order::where('order_status', 'returned')
+            ->where('updated_at', '>=', now()->subDays(7))
+            ->count();
+
+        $avgRating = \App\Models\DeliveryRating::avg('score');
+
+        return response()->json([
+            'data' => [
+                'orders_by_status' => $byStatus,
+                'delivered_today' => $deliveredToday,
+                'failed_last_7_days' => $failedWeek,
+                'returned_last_7_days' => $returnedWeek,
+                'average_delivery_rating' => $avgRating ? round((float) $avgRating, 2) : null,
+            ],
+        ]);
     }
 }
 
