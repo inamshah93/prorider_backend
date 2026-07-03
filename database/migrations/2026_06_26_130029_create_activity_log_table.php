@@ -12,9 +12,9 @@ return new class extends Migration
             $table->id();
             $table->string('log_name', 125)->nullable()->index();
             $table->text('description');
-            $table->nullableMorphs('subject', 'subject', 125);
+            $table->nullableMorphs('subject', 'subject');
             $table->string('event')->nullable();
-            $table->nullableMorphs('causer', 'causer', 125);
+            $table->nullableMorphs('causer', 'causer');
             $table->json('attribute_changes')->nullable();
             $table->json('properties')->nullable();
             $table->timestamps();
