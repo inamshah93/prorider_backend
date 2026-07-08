@@ -23,6 +23,8 @@ class OrderResource extends JsonResource
                 'phone' => $this->customerUser->phone,
             ] : null),
             'delivery_address' => $this->delivery_address,
+            'delivery_lat' => $this->delivery_lat !== null ? (float) $this->delivery_lat : null,
+            'delivery_lng' => $this->delivery_lng !== null ? (float) $this->delivery_lng : null,
             'target_city_id' => $this->target_city_id,
             'target_city' => $this->whenLoaded('targetCity', fn () => $this->targetCity?->name),
             'parcel_weight' => $this->parcel_weight,

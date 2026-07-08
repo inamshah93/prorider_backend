@@ -20,6 +20,8 @@ class Order extends Model
         'customer_name',
         'customer_phone',
         'delivery_address',
+        'delivery_lat',
+        'delivery_lng',
         'target_city_id',
         'parcel_weight',
         'item_details',

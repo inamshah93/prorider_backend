@@ -93,4 +93,121 @@ class CustomerPortalTest extends TestCase
             'customer_user_id' => $user->id,
         ]);
     }
+
+    public function test_customer_can_set_delivery_location_on_open_order(): void
+    {
+        $customer = User::where('email', 'customer@velo.pk')->first();
+        $merchant = Merchant::first();
+
+        $order = Order::create([
+            'order_reference_number' => 'PR-LOC0001',
+            'merchant_id' => $merchant->id,
+            'customer_user_id' => $customer->id,
+            'customer_name' => $customer->name,
+            'customer_phone' => $customer->phone,
+            'delivery_address' => 'Old Address',
+            'target_city_id' => 1,
+            'cod_amount' => 500,
+            'delivery_charge' => 400,
+            'payment_method' => 'cod',
+            'payment_status' => 'pending',
+            'order_status' => 'created',
+            'merchant_prep_status' => 'created',
+        ]);
+
+        Sanctum::actingAs($customer);
+
+        $response = $this->putJson("/api/v1/customer/orders/{$order->id}/delivery-location", [
+            'delivery_lat' => 31.5204,
+            'delivery_lng' => 74.3587,
+            'delivery_address' => 'Gulberg, Lahore',
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('data.delivery_lat', 31.5204);
+        $response->assertJsonPath('data.delivery_lng', 74.3587);
+        $response->assertJsonPath('data.delivery_address', 'Gulberg, Lahore');
+
+        $this->assertDatabaseHas('orders', [
+            'id' => $order->id,
+            'delivery_lat' => 31.5204,
+            'delivery_lng' => 74.3587,
+            'delivery_address' => 'Gulberg, Lahore',
+        ]);
+    }
+
+    public function test_customer_cannot_set_delivery_location_on_delivered_order(): void
+    {
+        $customer = User::where('email', 'customer@velo.pk')->first();
+        $merchant = Merchant::first();
+
+        $order = Order::create([
+            'order_reference_number' => 'PR-LOC0002',
+            'merchant_id' => $merchant->id,
+            'customer_user_id' => $customer->id,
+            'customer_name' => $customer->name,
+            'customer_phone' => $customer->phone,
+            'delivery_address' => 'Test Address',
+            'target_city_id' => 1,
+            'cod_amount' => 500,
+            'delivery_charge' => 400,
+            'payment_method' => 'cod',
+            'payment_status' => 'pending',
+            'order_status' => 'delivered',
+            'merchant_prep_status' => 'created',
+        ]);
+
+        Sanctum::actingAs($customer);
+
+        $this->putJson("/api/v1/customer/orders/{$order->id}/delivery-location", [
+            'delivery_lat' => 31.5204,
+            'delivery_lng' => 74.3587,
+        ])->assertStatus(422);
+    }
+
+    public function test_customer_can_bulk_set_delivery_location_on_open_orders(): void
+    {
+        $customer = User::where('email', 'customer@velo.pk')->first();
+        $merchant = Merchant::first();
+
+        foreach (['PR-BULK001', 'PR-BULK002'] as $ref) {
+            Order::create([
+                'order_reference_number' => $ref,
+                'merchant_id' => $merchant->id,
+                'customer_user_id' => $customer->id,
+                'customer_name' => $customer->name,
+                'customer_phone' => $customer->phone,
+                'delivery_address' => 'Old Address',
+                'target_city_id' => 1,
+                'cod_amount' => 500,
+                'delivery_charge' => 400,
+                'payment_method' => 'cod',
+                'payment_status' => 'pending',
+                'order_status' => 'created',
+                'merchant_prep_status' => 'created',
+            ]);
+        }
+
+        Sanctum::actingAs($customer);
+
+        $response = $this->putJson('/api/v1/customer/orders/delivery-location', [
+            'delivery_lat' => 24.8607,
+            'delivery_lng' => 67.0011,
+            'delivery_address' => 'Clifton, Karachi',
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('updated_count', 2);
+
+        $this->assertDatabaseHas('orders', [
+            'order_reference_number' => 'PR-BULK001',
+            'delivery_lat' => 24.8607,
+            'delivery_lng' => 67.0011,
+        ]);
+        $this->assertDatabaseHas('orders', [
+            'order_reference_number' => 'PR-BULK002',
+            'delivery_lat' => 24.8607,
+            'delivery_lng' => 67.0011,
+        ]);
+    }
 }

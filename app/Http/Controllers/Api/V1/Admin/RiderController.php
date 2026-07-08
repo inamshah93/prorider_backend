@@ -7,18 +7,24 @@ use App\Http\Resources\OrderResource;
 use App\Http\Resources\RiderProfileResource;
 use App\Models\Order;
 use App\Models\RiderDocument;
+use App\Models\RiderLocationPing;
 use App\Models\RiderProfile;
 use App\Models\RiderSettlement;
 use App\Models\User;
+use App\Services\RiderRouteReportService;
 use App\Services\RiderSettlementService;
 use App\Support\PhoneNormalizer;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
 class RiderController extends Controller
 {
-    public function __construct(private RiderSettlementService $settlements) {}
+    public function __construct(
+        private RiderSettlementService $settlements,
+        private RiderRouteReportService $routes,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -96,6 +102,60 @@ class RiderController extends Controller
             ]);
 
         return response()->json(['data' => $riders]);
+    }
+
+    public function locationHistory(Request $request, RiderProfile $rider): JsonResponse
+    {
+        $data = $request->validate([
+            'from' => 'required|date',
+            'to' => 'required|date|after_or_equal:from',
+        ]);
+
+        // Keep the instants as provided (ISO with timezone). Use UTC by default in DB comparisons.
+        $from = CarbonImmutable::parse($data['from']);
+        $to = CarbonImmutable::parse($data['to']);
+
+        $pings = RiderLocationPing::query()
+            ->where('rider_profile_id', $rider->id)
+            ->whereBetween('recorded_at', [$from, $to])
+            ->orderBy('recorded_at')
+            ->get()
+            ->map(fn (RiderLocationPing $p) => [
+                'recorded_at' => $p->recorded_at?->toISOString(),
+                'lat' => (float) $p->lat,
+                'lng' => (float) $p->lng,
+                'accuracy_m' => $p->accuracy_m !== null ? (float) $p->accuracy_m : null,
+                'speed_mps' => $p->speed_mps !== null ? (float) $p->speed_mps : null,
+                'heading_deg' => $p->heading_deg !== null ? (float) $p->heading_deg : null,
+            ]);
+
+        return response()->json([
+            'data' => $pings,
+            'meta' => [
+                'from' => $from->toISOString(),
+                'to' => $to->toISOString(),
+                'count' => $pings->count(),
+            ],
+        ]);
+    }
+
+    public function routeReport(Request $request, RiderProfile $rider): JsonResponse
+    {
+        $data = $request->validate([
+            'from' => 'required|date',
+            'to' => 'required|date|after_or_equal:from',
+        ]);
+
+        $from = CarbonImmutable::parse($data['from']);
+        $to = CarbonImmutable::parse($data['to']);
+
+        return response()->json([
+            'data' => $this->routes->build($rider, $from, $to),
+            'meta' => [
+                'from' => $from->toISOString(),
+                'to' => $to->toISOString(),
+            ],
+        ]);
     }
 
     public function documents(RiderProfile $rider): JsonResponse

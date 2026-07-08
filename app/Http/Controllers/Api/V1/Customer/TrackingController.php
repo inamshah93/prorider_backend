@@ -56,6 +56,11 @@ class TrackingController extends Controller
                 'lat' => $order->pickup_lat,
                 'lng' => $order->pickup_lng,
             ] : null,
+            'delivery_location' => ($order->delivery_lat && $order->delivery_lng) ? [
+                'lat' => (float) $order->delivery_lat,
+                'lng' => (float) $order->delivery_lng,
+            ] : null,
+            'can_update_delivery_location' => app(\App\Services\CustomerDeliveryLocationService::class)->canUpdateLocation($order),
             'eta_minutes' => $etaMinutes,
             'can_rate' => ($order->order_status?->value ?? $order->order_status) === 'delivered',
             'updated_at' => $order->updated_at,

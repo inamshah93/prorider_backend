@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('prorider:compile-day-end')->dailyAt('00:05');
+Schedule::command('prorider:cleanup-rider-location-pings')->dailyAt('02:10');

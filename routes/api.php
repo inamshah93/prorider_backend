@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\V1\Admin\UserRoleController as AdminUserRoleControl
 use App\Http\Controllers\Api\V1\Admin\ReportsController as AdminReportsController;
 use App\Http\Controllers\Api\V1\Admin\ActivityLogController as AdminActivityLogController;
 use App\Http\Controllers\Api\V1\Admin\CustomerController as AdminCustomerController;
+use App\Http\Controllers\Api\V1\Customer\DeliveryLocationController;
 use App\Http\Controllers\Api\V1\Customer\RatingController;
 use App\Http\Controllers\Api\V1\Customer\OrderController as CustomerOrderController;
 use App\Http\Controllers\Api\V1\Customer\ProfileController as CustomerProfileController;
@@ -86,6 +87,8 @@ Route::prefix('v1')->group(function () {
                 Route::post('riders/{rider}/settlements', [AdminRiderController::class, 'storeSettlement']);
                 Route::get('riders/{rider}/orders', [AdminRiderController::class, 'orders']);
                 Route::get('riders/{rider}/orders/stats', [AdminRiderController::class, 'orderStats']);
+                Route::get('riders/{rider}/location-history', [AdminRiderController::class, 'locationHistory']);
+                Route::get('riders/{rider}/route-report', [AdminRiderController::class, 'routeReport']);
             });
 
             Route::get('activity-logs', [AdminActivityLogController::class, 'index']);
@@ -158,7 +161,9 @@ Route::prefix('v1')->group(function () {
         Route::prefix('customer')->group(function () {
             Route::get('profile', [CustomerProfileController::class, 'show']);
             Route::get('orders', [CustomerOrderController::class, 'index']);
+            Route::put('orders/delivery-location', [DeliveryLocationController::class, 'bulkUpdate']);
             Route::get('orders/{order}', [CustomerOrderController::class, 'show']);
+            Route::put('orders/{order}/delivery-location', [DeliveryLocationController::class, 'update']);
             Route::post('orders/{order}/rate', [RatingController::class, 'store']);
         });
     });
